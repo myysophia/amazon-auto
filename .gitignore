@@ -46,7 +46,7 @@ next-env.d.ts
 /playwright/.cache/
 
 # debug screenshots
-debug-*.png
+# debug-*.png
 debug-*.jpg
 debug-*.jpeg
 test-screenshot.png
