@@ -13,8 +13,11 @@ export default function ConcurrencyConfig({
 }: ConcurrencyConfigProps) {
   const handleChange = (value: string) => {
     const num = parseInt(value, 10);
-    if (!isNaN(num) && num >= 1 && num <= 10) {
+    if (!isNaN(num) && num >= 1) {
       onChange(num);
+    } else if (value === '') {
+      // 允许清空输入框
+      onChange(1);
     }
   };
 
@@ -31,7 +34,6 @@ export default function ConcurrencyConfig({
         onChange={(e) => handleChange(e.target.value)}
         disabled={disabled}
         min="1"
-        max="10"
         className="w-full px-4 py-2 text-base border border-gray-300 rounded-lg
                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                    disabled:bg-gray-100 disabled:cursor-not-allowed
@@ -40,7 +42,7 @@ export default function ConcurrencyConfig({
         autoComplete="off"
       />
       <p className="text-xs text-gray-500 dark:text-gray-400">
-        同时搜索的关键词数量（1-10），建议值：1-3
+        同时搜索的关键词数量（建议值：1-3）
       </p>
       <div className="text-xs space-y-1">
         <p className="text-gray-600 dark:text-gray-400">

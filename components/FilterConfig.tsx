@@ -16,6 +16,12 @@ export default function FilterConfig({ filters, onChange, disabled = false }: Fi
         ...filters,
         [field]: numValue,
       });
+    } else if (value === '') {
+      // 允许清空输入框，设置为0
+      onChange({
+        ...filters,
+        [field]: 0,
+      });
     }
   };
 
