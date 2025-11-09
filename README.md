@@ -30,6 +30,12 @@
 
 ### 1. 安装依赖
 
+node版本要求
+```bash
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+```
+
 ```bash
 npm install
 ```
