@@ -6,8 +6,8 @@ WORKDIR /app
 # 复制依赖文件
 COPY package*.json ./
 
-# 安装依赖
-RUN npm ci --only=production && npm cache clean --force
+# 安装所有依赖（包括 devDependencies，构建需要）
+RUN npm ci && npm cache clean --force
 
 # 复制源代码
 COPY . .
@@ -45,7 +45,11 @@ ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
 
 # 从构建阶段复制必要文件
 COPY --from=builder --chown=nextjs:nodejs /app/package*.json ./
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+
+# 只安装生产依赖
+RUN npm ci --only=production && npm cache clean --force
+
+# 复制构建产物
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
