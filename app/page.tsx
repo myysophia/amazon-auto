@@ -99,19 +99,19 @@ export default function Home() {
       return;
     }
 
-    // 筛选出符合条件的关键词
-    const qualifiedKeywords = results
-      .filter(r => r.meetsConditions)
-      .map(r => ({
-        '关键词': r.keyword,
-        '搜索结果数': r.searchResults ?? 0,
-        '最高月销量': r.maxMonthSales ?? 0,
-        '最多评论数': r.maxReviews ?? 0,
-        '耗时(秒)': r.duration ? (r.duration / 1000).toFixed(2) : '-',
-      }));
+    // 导出所有关键词（包括符合和不符合条件的）
+    const allKeywords = results.map(r => ({
+      '关键词': r.keyword,
+      '搜索结果数': r.searchResults ?? '-',
+      '最高月销量': r.maxMonthSales ?? '-',
+      '最多评论数': r.maxReviews ?? '-',
+      '是否符合': r.meetsConditions ? '是' : '否',
+      '耗时(秒)': r.duration ? (r.duration / 1000).toFixed(2) : '-',
+      '错误信息': r.error || '',
+    }));
 
     // 转换为CSV
-    const csv = Papa.unparse(qualifiedKeywords);
+    const csv = Papa.unparse(allKeywords);
     
     // 创建Blob并下载
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
