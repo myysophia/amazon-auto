@@ -2,6 +2,9 @@
 
 自动化批量搜索Amazon关键词，根据搜索结果数、月销量、评论数等指标筛选出符合条件的关键词。
 
+<img width="2580" height="4066" alt="CleanShot 2025-11-10 at 09 57 00@2x" src="https://github.com/user-attachments/assets/c18eb087-14f1-45cf-a7de-6540df2a1c6d" />
+
+
 ## 功能特性
 
 - ✅ **用户认证** - 登录保护，防止未授权访问
