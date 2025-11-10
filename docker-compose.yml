@@ -16,16 +16,16 @@ services:
       - NEXT_TELEMETRY_DISABLED=1
       # Playwright 配置
       - PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-      - PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
+      - PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
     volumes:
       # 如果需要持久化数据，可以添加卷
       # - ./data:/app/data
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+    # healthcheck:
+    #   test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 40s
     # 资源限制（根据需要调整）
     deploy:
       resources:

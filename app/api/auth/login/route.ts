@@ -17,11 +17,14 @@ export async function POST(request: NextRequest) {
       const response = NextResponse.json({ success: true });
       
       // 设置httpOnly cookie，有效期7天
+      // secure: 仅在 HTTPS 时启用（通过 X-Forwarded-Proto 判断）
+      const isHttps = request.headers.get('x-forwarded-proto') === 'https';
+      
       response.cookies.set({
         name: AUTH_COOKIE_NAME,
         value: AUTH_COOKIE_VALUE,
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: isHttps, // 只在 HTTPS 时启用 secure
         sameSite: 'lax',
         maxAge: 60 * 60 * 24 * 7, // 7天
         path: '/',
