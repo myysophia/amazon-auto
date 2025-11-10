@@ -26,6 +26,27 @@
 - **PapaParse** - CSV处理
 - **Lucide React** - 图标库
 
+## 快速开始
+
+### 方式一：Docker 部署（推荐）
+
+**最快速的部署方式：**
+
+```bash
+# 使用 Docker Compose
+docker-compose up -d
+
+# 或直接拉取镜像（需先推送到 GitHub Container Registry）
+docker pull ghcr.io/YOUR_USERNAME/amazon-auto:latest
+docker run -d -p 3000:3000 ghcr.io/YOUR_USERNAME/amazon-auto:latest
+```
+
+访问 http://localhost:3000，使用 `admin/admin` 登录。
+
+📖 **完整部署文档**：查看 [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+### 方式二：本地开发
+
 ## 安装和运行
 
 ### 1. 安装依赖
@@ -171,6 +192,29 @@ amazon-auto/
 - ✅ 触摸友好的交互（移动端≥44px点击目标）
 - ✅ 表单验证和错误提示
 - ✅ 未保存更改的导航警告
+
+## CI/CD 自动构建
+
+本项目配置了 GitHub Actions 自动构建 Docker 镜像：
+
+### 触发条件
+
+- ✅ 推送到 `main` 或 `master` 分支 → 自动构建并推送 `latest` 标签
+- ✅ 创建版本标签（如 `v1.0.0`） → 自动构建并推送语义化版本标签
+- ✅ Pull Request → 构建但不推送（测试构建是否成功）
+- ✅ 手动触发（GitHub Actions 页面）
+
+### 首次设置
+
+1. 进入 GitHub 仓库的 **Settings → Actions → General**
+2. 在 "Workflow permissions" 中选择 **"Read and write permissions"**
+3. 保存更改
+
+推送代码后，GitHub Actions 会自动构建镜像并推送到 `ghcr.io/YOUR_USERNAME/amazon-auto`
+
+📦 **镜像地址**：`ghcr.io/YOUR_USERNAME/amazon-auto:latest`
+
+更多详情请查看 [DEPLOYMENT.md](./DEPLOYMENT.md)
 
 ## 开发
 
