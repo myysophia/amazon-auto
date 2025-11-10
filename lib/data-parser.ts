@@ -2,15 +2,28 @@
  * 解析Amazon搜索结果数
  * 示例: "1-48 of over 200,000 results for" -> 200000
  * 示例: "1-48 of 5,000 results for" -> 5000
+ * 示例: "7 results for "geogard ect"" -> 7
  */
 export function parseSearchResults(text: string): number | null {
   try {
-    // 匹配 "of over X results" 或 "of X results"
-    const match = text.match(/of\s+(?:over\s+)?([\d,]+)\s+results/i);
+    // 方法1: 匹配 "of over X results" 或 "of X results"
+    let match = text.match(/of\s+(?:over\s+)?([\d,]+)\s+results/i);
     if (match && match[1]) {
-      // 移除逗号并转换为数字
       return parseInt(match[1].replace(/,/g, ''), 10);
     }
+
+    // 方法2: 匹配简单格式 "X results for"（少量结果时的格式）
+    match = text.match(/^(\d+)\s+results?\s+for/i);
+    if (match && match[1]) {
+      return parseInt(match[1], 10);
+    }
+
+    // 方法3: 匹配任何 "数字 + results" 的模式
+    match = text.match(/([\d,]+)\s+results?/i);
+    if (match && match[1]) {
+      return parseInt(match[1].replace(/,/g, ''), 10);
+    }
+
     return null;
   } catch (error) {
     console.error('解析搜索结果数失败:', error);
