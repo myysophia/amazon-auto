@@ -27,12 +27,17 @@ export async function searchAmazonKeyword(
     console.log(`\n========== 搜索: ${keyword} ==========`);
     
     // 启动浏览器
+    // 使用环境变量指定的 Chromium 路径，如果未设置则使用默认路径
+    const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined;
+    
     browser = await chromium.launch({
       headless,
+      executablePath,
       args: [
         '--no-sandbox', 
         '--disable-setuid-sandbox',
         '--disable-blink-features=AutomationControlled',
+        '--disable-dev-shm-usage',
       ],
     });
 

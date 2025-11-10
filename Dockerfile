@@ -30,20 +30,18 @@ ENV NODE_ENV=production \
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 创建非 root 用户
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
-
-# 安装 Playwright 依赖
+# 安装 Chromium 和依赖（必须在创建用户之前）
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         chromium \
         ca-certificates \
+        fonts-liberation \
         fonts-freefont-ttf \
         fonts-noto-color-emoji \
         libatk-bridge2.0-0 \
         libatk1.0-0 \
         libatspi2.0-0 \
+        libcups2 \
         libdrm2 \
         libgbm1 \
         libgtk-3-0 \
@@ -53,12 +51,20 @@ RUN apt-get update && \
         libxfixes3 \
         libxkbcommon0 \
         libxrandr2 \
+        xdg-utils \
         xfonts-base && \
     rm -rf /var/lib/apt/lists/*
 
+# 创建非 root 用户并设置 home 目录
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 --home /home/nextjs nextjs && \
+    mkdir -p /home/nextjs/.cache && \
+    chown -R nextjs:nodejs /home/nextjs
+
 # 设置 Playwright 使用系统安装的 Chromium
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
-    PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
+    PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium \
+    PLAYWRIGHT_BROWSERS_PATH=0
 
 # 从构建阶段复制必要文件
 COPY --from=builder --chown=nextjs:nodejs /app/package*.json ./

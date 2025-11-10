@@ -48,10 +48,10 @@ dist
 # Documentation
 *.md
 !README.md
-WEB-AGENT.md
 
 # Test files
 test-*.js
+test-*.ts
 debug-*.png
 test-screenshot.png
 *.xlsx
@@ -60,3 +60,10 @@ test-screenshot.png
 .cache
 .turbo
 
+# Docker
+.dockerignore
+Dockerfile
+docker-compose*.yml
+
+# GitHub
+.github
