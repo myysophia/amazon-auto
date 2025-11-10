@@ -25,13 +25,21 @@ export function useKeywordProcessor() {
       maxReviews: number | null,
       filters: FilterConditions
     ): boolean => {
-      // 如果搜索结果数不符合，后端会返回 null 的月销和评论
+      // 1. 搜索结果数必须符合条件
       if (searchResults === null || searchResults >= filters.maxSearchResults) {
         return false;
       }
 
-      // 如果月销和评论都不为 null，说明找到了符合条件的商品
-      return maxMonthSales !== null && maxReviews !== null;
+      // 2. 月销和评论必须存在
+      if (maxMonthSales === null || maxReviews === null) {
+        return false;
+      }
+
+      // 3. 检查月销和评论的具体数值是否符合条件
+      const salesOk = maxMonthSales > filters.minMonthSales;
+      const reviewsOk = maxReviews < filters.maxReviews;
+
+      return salesOk && reviewsOk;
     },
     []
   );
