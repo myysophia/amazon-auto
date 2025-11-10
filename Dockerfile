@@ -1,5 +1,5 @@
 # 多阶段构建 - 构建阶段
-FROM node:20-alpine AS builder
+FROM node:20-bookworm-slim AS builder
 
 WORKDIR /app
 
@@ -19,7 +19,7 @@ RUN mkdir -p public
 RUN npm run build
 
 # 多阶段构建 - 运行阶段
-FROM node:20-alpine AS runner
+FROM node:20-bookworm-slim AS runner
 
 WORKDIR /app
 
@@ -28,23 +28,37 @@ ENV NODE_ENV=production \
     PORT=3000 \
     NEXT_TELEMETRY_DISABLED=1
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 # 创建非 root 用户
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # 安装 Playwright 依赖
-RUN apk add --no-cache \
-    chromium \
-    nss \
-    freetype \
-    freetype-dev \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        chromium \
+        ca-certificates \
+        fonts-freefont-ttf \
+        fonts-noto-color-emoji \
+        libatk-bridge2.0-0 \
+        libatk1.0-0 \
+        libatspi2.0-0 \
+        libdrm2 \
+        libgbm1 \
+        libgtk-3-0 \
+        libnss3 \
+        libxcomposite1 \
+        libxdamage1 \
+        libxfixes3 \
+        libxkbcommon0 \
+        libxrandr2 \
+        xfonts-base && \
+    rm -rf /var/lib/apt/lists/*
 
 # 设置 Playwright 使用系统安装的 Chromium
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
-    PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
+    PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 
 # 从构建阶段复制必要文件
 COPY --from=builder --chown=nextjs:nodejs /app/package*.json ./
