@@ -12,6 +12,9 @@ RUN npm ci && npm cache clean --force
 # 复制源代码
 COPY . .
 
+# 若项目未提供静态资源目录，提前创建避免复制阶段报错
+RUN mkdir -p public
+
 # 构建 Next.js 应用
 RUN npm run build
 
@@ -61,4 +64,3 @@ EXPOSE 3000
 
 # 启动应用
 CMD ["npm", "start"]
-
