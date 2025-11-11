@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchAmazonKeyword } from '@/lib/amazon-scraper';
 import type { SearchRequest, SearchResponse } from '@/lib/types';
+import { SEARCH_API_MAX_DURATION } from '@/lib/config';
 
-export const maxDuration = 300; // 5 minutes timeout for API route
+export const maxDuration = SEARCH_API_MAX_DURATION; // 5 minutes timeout for API route
 
 /**
  * POST /api/search
@@ -61,4 +62,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

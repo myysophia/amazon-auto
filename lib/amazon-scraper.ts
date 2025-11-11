@@ -1,6 +1,7 @@
 import { chromium, Browser, BrowserContext, Page } from 'playwright';
 import { parseSearchResults, parseMonthSales, extractReviewsFromLink } from './data-parser';
 import type { FilterConditions } from './types';
+import { PLAYWRIGHT_CHROMIUM_PATH, ENABLE_DEBUG_SCREENSHOT } from './config';
 
 export interface ScraperResult {
   searchResults: number | null;
@@ -20,6 +21,20 @@ const CHROMIUM_ARGS = [
 let sharedBrowser: Browser | null = null;
 let browserLaunchPromise: Promise<Browser> | null = null;
 let cleanupRegistered = false;
+
+const captureDebugScreenshot = async (page: Page | null, prefix: string) => {
+  if (!ENABLE_DEBUG_SCREENSHOT || !page) {
+    return;
+  }
+
+  try {
+    const screenshotPath = `${prefix}-${Date.now()}.png`;
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+    console.log(`截图已保存: ${screenshotPath}`);
+  } catch (error) {
+    // 忽略截图失败
+  }
+};
 
 const registerProcessCleanup = () => {
   if (cleanupRegistered) {
@@ -78,8 +93,7 @@ async function getBrowser(headless: boolean, executablePath?: string): Promise<B
       });
   }
 
-  return browserLaunchPromise;
-}
+  return browserLaunchPromise;}
 
 function setupRequestInterception(context: BrowserContext) {
   const blockedResourceTypes = new Set(['image', 'media', 'font']);
@@ -126,7 +140,7 @@ export async function searchAmazonKeyword(
 
     // 启动浏览器
     // 使用环境变量指定的 Chromium 路径，如果未设置则使用默认路径
-    const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined;
+    const executablePath = PLAYWRIGHT_CHROMIUM_PATH || undefined;
 
     const browser = await getBrowser(headless, executablePath);
 
@@ -150,9 +164,7 @@ export async function searchAmazonKeyword(
     } catch (e: any) {
       console.error('✗ 无法访问Amazon:', e.message);
       try {
-        const screenshotPath = `debug-goto-failed-${Date.now()}.png`;
-        await page.screenshot({ path: screenshotPath, fullPage: true });
-        console.log(`截图已保存: ${screenshotPath}`);
+        await captureDebugScreenshot(page, 'debug-goto-failed');
       } catch (screenshotError) {
         // 忽略截图错误
       }
@@ -415,15 +427,7 @@ export async function searchAmazonKeyword(
     console.error(`✗ 搜索失败: ${error.message} (耗时: ${(duration / 1000).toFixed(2)}秒)`);
     
     // 尝试保存错误截图
-    if (page) {
-      try {
-        const screenshotPath = `debug-error-${Date.now()}.png`;
-        await page.screenshot({ path: screenshotPath, fullPage: true });
-        console.log(`截图: ${screenshotPath}`);
-      } catch (screenshotError) {
-        // 忽略
-      }
-    }
+    await captureDebugScreenshot(page, 'debug-error');
     
     return {
       searchResults: null,
@@ -442,4 +446,3 @@ export async function searchAmazonKeyword(
     }
   }
 }
-

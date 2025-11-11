@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import ServiceWorkerCleanup from "@/components/ServiceWorkerCleanup";
 
 export const metadata: Metadata = {
   title: "Amazon关键词筛选工具",
@@ -14,9 +15,9 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body className="antialiased">
+        <ServiceWorkerCleanup />
         {children}
       </body>
     </html>
   );
 }
-
