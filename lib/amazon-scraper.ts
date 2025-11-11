@@ -1,4 +1,4 @@
-import { chromium, Browser, Page } from 'playwright';
+import { chromium, Browser, BrowserContext, Page } from 'playwright';
 import { parseSearchResults, parseMonthSales, extractReviewsFromLink } from './data-parser';
 import type { FilterConditions } from './types';
 
@@ -8,6 +8,104 @@ export interface ScraperResult {
   maxReviews: number | null;
   error?: string;
   duration?: number;
+}
+
+const CHROMIUM_ARGS = [
+  '--no-sandbox',
+  '--disable-setuid-sandbox',
+  '--disable-blink-features=AutomationControlled',
+  '--disable-dev-shm-usage',
+];
+
+let sharedBrowser: Browser | null = null;
+let browserLaunchPromise: Promise<Browser> | null = null;
+let cleanupRegistered = false;
+
+const registerProcessCleanup = () => {
+  if (cleanupRegistered) {
+    return;
+  }
+  cleanupRegistered = true;
+
+  const shutdown = async () => {
+    if (sharedBrowser) {
+      try {
+        await sharedBrowser.close();
+      } catch (error) {
+        // 忽略清理时的错误
+      } finally {
+        sharedBrowser = null;
+        browserLaunchPromise = null;
+      }
+    }
+  };
+
+  process.once('exit', shutdown);
+  process.once('SIGINT', async () => {
+    await shutdown();
+    process.exit(0);
+  });
+  process.once('SIGTERM', async () => {
+    await shutdown();
+    process.exit(0);
+  });
+};
+
+async function getBrowser(headless: boolean, executablePath?: string): Promise<Browser> {
+  if (sharedBrowser) {
+    return sharedBrowser;
+  }
+
+  if (!browserLaunchPromise) {
+    browserLaunchPromise = chromium
+      .launch({
+        headless,
+        executablePath,
+        args: CHROMIUM_ARGS,
+      })
+      .then((browser) => {
+        sharedBrowser = browser;
+        sharedBrowser.on('disconnected', () => {
+          sharedBrowser = null;
+          browserLaunchPromise = null;
+        });
+        registerProcessCleanup();
+        return browser;
+      })
+      .catch((error) => {
+        browserLaunchPromise = null;
+        throw error;
+      });
+  }
+
+  return browserLaunchPromise;
+}
+
+function setupRequestInterception(context: BrowserContext) {
+  const blockedResourceTypes = new Set(['image', 'media', 'font']);
+  const blockedDomains = [
+    'amazon-adsystem.com',
+    'doubleclick.net',
+    'googlesyndication.com',
+    'googletagmanager.com',
+    'fls-na.amazon.com',
+  ];
+
+  context.route('**/*', (route) => {
+    const request = route.request();
+    const resourceType = request.resourceType();
+    const url = request.url();
+
+    if (blockedResourceTypes.has(resourceType)) {
+      return route.abort();
+    }
+
+    if (blockedDomains.some((domain) => url.includes(domain))) {
+      return route.abort();
+    }
+
+    return route.continue();
+  });
 }
 
 /**
@@ -20,33 +118,26 @@ export async function searchAmazonKeyword(
   headless: boolean = true
 ): Promise<ScraperResult> {
   const startTime = Date.now();
-  let browser: Browser | null = null;
+  let context: BrowserContext | null = null;
   let page: Page | null = null;
 
   try {
     console.log(`\n========== 搜索: ${keyword} ==========`);
-    
+
     // 启动浏览器
     // 使用环境变量指定的 Chromium 路径，如果未设置则使用默认路径
     const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined;
-    
-    browser = await chromium.launch({
-      headless,
-      executablePath,
-      args: [
-        '--no-sandbox', 
-        '--disable-setuid-sandbox',
-        '--disable-blink-features=AutomationControlled',
-        '--disable-dev-shm-usage',
-      ],
-    });
 
-    const context = await browser.newContext({
+    const browser = await getBrowser(headless, executablePath);
+
+    context = await browser.newContext({
       userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       viewport: { width: 1920, height: 1080 },
       locale: 'en-US',
       timezoneId: 'America/New_York',
     });
+
+    setupRequestInterception(context);
 
     page = await context.newPage();
 
@@ -346,8 +437,8 @@ export async function searchAmazonKeyword(
     if (page) {
       await page.close().catch(() => {});
     }
-    if (browser) {
-      await browser.close().catch(() => {});
+    if (context) {
+      await context.close().catch(() => {});
     }
   }
 }
