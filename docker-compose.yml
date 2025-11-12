@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: amazon-keyword-analyzer:latest
+    image: ghcr.io/myysophia/amazon-auto:latest
     container_name: amazon-auto
     restart: unless-stopped
     ports:
