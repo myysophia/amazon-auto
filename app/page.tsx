@@ -34,6 +34,7 @@ export default function Home() {
     results,
     currentIndex,
     currentKeyword,
+    progressTotal,
     startProcessing,
     retryErrorKeywords,
     stopProcessing,
@@ -251,7 +252,7 @@ export default function Home() {
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
               <ProgressBar
                 current={currentIndex}
-                total={keywords.length}
+                total={progressTotal || keywords.length}
                 currentKeyword={currentKeyword}
               />
             </div>
@@ -278,4 +279,3 @@ export default function Home() {
     </main>
   );
 }
-

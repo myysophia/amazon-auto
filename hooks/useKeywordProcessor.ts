@@ -20,6 +20,7 @@ export function useKeywordProcessor() {
   const [results, setResults] = useState<KeywordResult[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentKeyword, setCurrentKeyword] = useState<string>('');
+  const [progressTotal, setProgressTotal] = useState(0);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const checkConditions = useCallback(
@@ -142,6 +143,7 @@ export function useKeywordProcessor() {
       setResults([]);
       setCurrentIndex(0);
       setCurrentKeyword('');
+      setProgressTotal(keywords.length);
 
       const controller = new AbortController();
       abortControllerRef.current = controller;
@@ -237,10 +239,16 @@ export function useKeywordProcessor() {
       abortControllerRef.current = controller;
 
       const updatedResults = [...results];
+      let completed = 0;
+      let aborted = false;
 
       try {
+        setCurrentIndex(0);
+        setProgressTotal(erroredEntries.length);
+
         for (const { result, index } of erroredEntries) {
           if (controller.signal.aborted) {
+            aborted = true;
             break;
           }
 
@@ -256,6 +264,8 @@ export function useKeywordProcessor() {
 
           updatedResults[index] = retriedResult;
           setResults([...updatedResults]);
+          completed += 1;
+          setCurrentIndex(completed);
         }
 
         console.log('\n✅ 错误关键词重新搜索完成\n');
@@ -267,6 +277,11 @@ export function useKeywordProcessor() {
         setIsProcessing(false);
         setCurrentKeyword('');
         abortControllerRef.current = null;
+        if (!aborted) {
+          const totalKeywords = updatedResults.length;
+          setCurrentIndex(totalKeywords);
+          setProgressTotal(totalKeywords);
+        }
       }
     },
     [isProcessing, processKeyword, results]
@@ -286,6 +301,7 @@ export function useKeywordProcessor() {
     setResults([]);
     setCurrentIndex(0);
     setCurrentKeyword('');
+    setProgressTotal(0);
   }, [stopProcessing]);
 
   return {
@@ -293,6 +309,7 @@ export function useKeywordProcessor() {
     results,
     currentIndex,
     currentKeyword,
+    progressTotal,
     startProcessing,
     retryErrorKeywords,
     stopProcessing,
