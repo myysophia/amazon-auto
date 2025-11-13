@@ -199,11 +199,70 @@ export function useKeywordProcessor() {
     [processKeyword]
   );
 
+  const retryErrorKeywords = useCallback(
+    async ({ zipCode, filters, headless }: Pick<UseKeywordProcessorProps, 'zipCode' | 'filters' | 'headless'>) => {
+      if (isProcessing) {
+        console.warn('当前正在处理关键词，请稍后再试。');
+        return;
+      }
+
+      const erroredEntries = results
+        .map((result, index) => ({ result, index }))
+        .filter(({ result }) => Boolean(result.error));
+
+      if (erroredEntries.length === 0) {
+        console.log('没有需要重新搜索的关键词。');
+        return;
+      }
+
+      console.log(`\n🔄 开始重新搜索错误关键词: ${erroredEntries.length} 个\n`);
+
+      setIsProcessing(true);
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      const updatedResults = [...results];
+
+      try {
+        for (const { result, index } of erroredEntries) {
+          if (controller.signal.aborted) {
+            break;
+          }
+
+          setCurrentKeyword(result.keyword);
+
+          const retriedResult = await processKeyword(
+            result.keyword,
+            zipCode,
+            headless,
+            filters,
+            controller.signal
+          );
+
+          updatedResults[index] = retriedResult;
+          setResults([...updatedResults]);
+        }
+
+        console.log('\n✅ 错误关键词重新搜索完成\n');
+      } catch (error: any) {
+        if (error.name !== 'AbortError') {
+          console.error('重新搜索关键词出错:', error);
+        }
+      } finally {
+        setIsProcessing(false);
+        setCurrentKeyword('');
+        abortControllerRef.current = null;
+      }
+    },
+    [isProcessing, processKeyword, results]
+  );
+
   const stopProcessing = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       setIsProcessing(false);
       setCurrentKeyword('');
+      abortControllerRef.current = null;
     }
   }, []);
 
@@ -220,6 +279,7 @@ export function useKeywordProcessor() {
     currentIndex,
     currentKeyword,
     startProcessing,
+    retryErrorKeywords,
     stopProcessing,
     reset,
   };

@@ -35,6 +35,7 @@ export default function Home() {
     currentIndex,
     currentKeyword,
     startProcessing,
+    retryErrorKeywords,
     stopProcessing,
     reset,
   } = useKeywordProcessor();
@@ -123,6 +124,10 @@ export default function Home() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleRetryErrors = () => {
+    retryErrorKeywords({ zipCode, filters, headless });
   };
 
   // 警告未保存的更改
@@ -255,7 +260,12 @@ export default function Home() {
           {/* 结果表格 */}
           {results.length > 0 && (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-              <ResultsTable results={results} onExport={handleExport} />
+              <ResultsTable
+                results={results}
+                onExport={handleExport}
+                onRetryErrors={handleRetryErrors}
+                isProcessing={isProcessing}
+              />
             </div>
           )}
         </div>

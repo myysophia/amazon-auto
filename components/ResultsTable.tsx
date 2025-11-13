@@ -2,17 +2,19 @@
 
 import { useState, useMemo } from 'react';
 import { KeywordResult } from '@/lib/types';
-import { Download, ArrowUpDown } from 'lucide-react';
+import { Download, ArrowUpDown, RotateCcw } from 'lucide-react';
 
 interface ResultsTableProps {
   results: KeywordResult[];
   onExport: () => void;
+  onRetryErrors: () => void;
+  isProcessing: boolean;
 }
 
 type SortField = 'keyword' | 'searchResults' | 'maxMonthSales' | 'maxReviews';
 type SortDirection = 'asc' | 'desc';
 
-export default function ResultsTable({ results, onExport }: ResultsTableProps) {
+export default function ResultsTable({ results, onExport, onRetryErrors, isProcessing }: ResultsTableProps) {
   const [sortField, setSortField] = useState<SortField>('keyword');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [filterMeetsConditions, setFilterMeetsConditions] = useState<'all' | 'yes' | 'no'>('all');
@@ -57,6 +59,7 @@ export default function ResultsTable({ results, onExport }: ResultsTableProps) {
   };
 
   const meetsConditionsCount = results.filter(r => r.meetsConditions).length;
+  const hasErrors = useMemo(() => results.some(r => r.error), [results]);
 
   return (
     <div className="space-y-4">
@@ -75,7 +78,7 @@ export default function ResultsTable({ results, onExport }: ResultsTableProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           {/* 筛选器 */}
           <select
             value={filterMeetsConditions}
@@ -88,6 +91,19 @@ export default function ResultsTable({ results, onExport }: ResultsTableProps) {
             <option value="yes">仅符合条件</option>
             <option value="no">仅不符合条件</option>
           </select>
+
+          <button
+            onClick={onRetryErrors}
+            disabled={!hasErrors || isProcessing}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg
+                       hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500
+                       disabled:bg-gray-400 disabled:cursor-not-allowed
+                       transition-colors duration-200"
+            aria-label="重新搜索错误关键词"
+          >
+            <RotateCcw size={18} />
+            <span className="text-sm font-medium">重搜错误关键词</span>
+          </button>
 
           {/* 导出按钮 */}
           <button
