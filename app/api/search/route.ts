@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchAmazonKeyword } from '@/lib/amazon-scraper';
 import type { SearchRequest, SearchResponse } from '@/lib/types';
-import { SEARCH_API_MAX_DURATION } from '@/lib/config';
 
-export const maxDuration = SEARCH_API_MAX_DURATION; // 5 minutes timeout for API route
+// Next.js 要求 segment 配置在同文件内且为字面量，故直接写死超时时间，保持与 env 默认值一致
+export const maxDuration = 300; // API 路由最长执行 5 分钟
 
 /**
  * POST /api/search
