@@ -11,6 +11,10 @@ interface UseKeywordProcessorProps {
   concurrency?: number;
 }
 
+const RETRY_DELAYS = [3000, 6000, 10000]; // 失败后依次等待 3s、6s、10s 重试
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export function useKeywordProcessor() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [results, setResults] = useState<KeywordResult[]>([]);
@@ -52,23 +56,29 @@ export function useKeywordProcessor() {
       filters: FilterConditions,
       signal: AbortSignal
     ): Promise<KeywordResult> => {
-      try {
-        const response = await fetch('/api/search', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ keyword, zipCode, headless, filters }),
-          signal,
-        });
+      let lastError: Error | null = null;
 
-        if (!response.ok) {
-          throw new Error(`HTTP错误: ${response.status}`);
-        }
+      for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
+        try {
+          const response = await fetch('/api/search', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ keyword, zipCode, headless, filters }),
+            signal,
+          });
 
-        const data = await response.json();
+          if (!response.ok) {
+            throw new Error(`HTTP错误: ${response.status}`);
+          }
 
-        if (data.success && data.data) {
+          const data = await response.json();
+
+          if (!data.success || !data.data) {
+            throw new Error(data.error || '服务器返回无效数据');
+          }
+
           const { searchResults, maxMonthSales, maxReviews } = data.data;
           const meetsConditions = checkConditions(
             searchResults,
@@ -85,31 +95,36 @@ export function useKeywordProcessor() {
             meetsConditions,
             duration: data.duration,
           };
-        } else {
-          return {
-            keyword,
-            searchResults: null,
-            maxMonthSales: null,
-            maxReviews: null,
-            meetsConditions: false,
-            error: data.error || '未知错误',
-            duration: undefined,
-          };
+        } catch (error: any) {
+          if (error.name === 'AbortError') {
+            throw error;
+          }
+
+          lastError = error instanceof Error ? error : new Error(String(error));
+
+          const retryDelay = RETRY_DELAYS[attempt];
+          if (!retryDelay) {
+            break;
+          }
+
+          console.warn(
+            `关键词 "${keyword}" 请求失败（第${attempt + 1}次），将在 ${retryDelay / 1000
+            } 秒后重试：${lastError.message}`
+          );
+
+          await delay(retryDelay);
         }
-      } catch (error: any) {
-        if (error.name === 'AbortError') {
-          throw error;
-        }
-        return {
-          keyword,
-          searchResults: null,
-          maxMonthSales: null,
-          maxReviews: null,
-          meetsConditions: false,
-          error: error.message || '请求失败',
-          duration: undefined,
-        };
       }
+
+      return {
+        keyword,
+        searchResults: null,
+        maxMonthSales: null,
+        maxReviews: null,
+        meetsConditions: false,
+        error: lastError?.message || '请求失败',
+        duration: undefined,
+      };
     },
     [checkConditions]
   );
@@ -284,4 +299,3 @@ export function useKeywordProcessor() {
     reset,
   };
 }
-
