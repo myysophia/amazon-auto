@@ -12,9 +12,11 @@ import type { FilterConditions } from '@/lib/types';
 import Papa from 'papaparse';
 import { Play, StopCircle, RotateCcw, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import VersionBadge from '@/components/VersionBadge';
 
 export default function Home() {
   const router = useRouter();
+  const appVersion = process.env.NEXT_PUBLIC_APP_VERSION ?? 'dev';
   // 状态管理
   const [keywordsText, setKeywordsText] = useState('');
   const [keywords, setKeywords] = useState<string[]>([]);
@@ -153,9 +155,12 @@ export default function Home() {
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-2">
               Amazon关键词筛选工具
             </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              批量搜索Amazon关键词，自动筛选符合条件的关键词
-            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-gray-600 dark:text-gray-400">
+                批量搜索Amazon关键词，自动筛选符合条件的关键词
+              </p>
+              <VersionBadge version={appVersion} />
+            </div>
           </div>
           <button
             onClick={handleLogout}
