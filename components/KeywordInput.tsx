@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 
 interface KeywordInputProps {
   value: string;
   onChange: (value: string, keywords: string[]) => void;
   disabled?: boolean;
+  actions?: ReactNode;
 }
 
-export default function KeywordInput({ value, onChange, disabled = false }: KeywordInputProps) {
+export default function KeywordInput({ value, onChange, disabled = false, actions }: KeywordInputProps) {
   const [keywordCount, setKeywordCount] = useState(0);
 
   useEffect(() => {
@@ -30,12 +31,15 @@ export default function KeywordInput({ value, onChange, disabled = false }: Keyw
 
   return (
     <div className="space-y-2">
-      <label htmlFor="keywords" className="block text-sm font-medium text-gray-900 dark:text-gray-100">
-        关键词列表
-        <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
-          ({keywordCount} 个关键词)
-        </span>
-      </label>
+      <div className="flex items-center justify-between gap-4">
+        <label htmlFor="keywords" className="block text-sm font-medium text-gray-900 dark:text-gray-100">
+          关键词列表
+          <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+            ({keywordCount} 个关键词)
+          </span>
+        </label>
+        {actions && <div className="flex items-center gap-2">{actions}</div>}
+      </div>
       <textarea
         id="keywords"
         name="keywords"

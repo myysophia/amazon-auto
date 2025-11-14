@@ -6,6 +6,7 @@ import { config } from '@/lib/config';
 interface NotifyRequestBody {
   results: Array<{
     keyword: string;
+    translation?: string;
     searchResults: number | null;
     maxMonthSales: number | null;
     maxReviews: number | null;
@@ -44,6 +45,7 @@ export async function POST(request: NextRequest) {
       Papa.unparse(
         results.map((r) => ({
           关键词: r.keyword,
+          翻译: r.translation ?? '',
           搜索结果数: r.searchResults ?? '-',
           最高月销量: r.maxMonthSales ?? '-',
           最多评论数: r.maxReviews ?? '-',

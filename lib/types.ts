@@ -1,6 +1,8 @@
 // 关键词搜索结果类型
 export interface KeywordResult {
+  keywordId?: number;
   keyword: string;
+  translation?: string;
   searchResults: number | null; // 搜索结果总数
   maxMonthSales: number | null; // 最高月销量
   maxReviews: number | null; // 最多评论数
@@ -29,6 +31,8 @@ export interface SearchConfig {
 // API搜索请求类型
 export interface SearchRequest {
   keyword: string;
+  keywordId?: number;
+  translation?: string | null;
   zipCode: string;
   headless: boolean;
   filters: FilterConditions;
@@ -43,5 +47,48 @@ export interface SearchResponse {
     maxReviews: number | null;
     duration?: number;
   };
+  error?: string;
+}
+
+export interface KeywordImportEntry {
+  keyword: string;
+  translation?: string | null;
+}
+
+export interface KeywordImportSummary {
+  total: number;
+  inserted: number;
+  updated: number;
+  unchanged: number;
+  skipped: number;
+}
+
+export interface KeywordTask {
+  keywordId?: number;
+  keyword: string;
+  translation?: string;
+  lastSearchedAt?: string;
+}
+
+export interface SkippedKeywordTask extends KeywordTask {
+  lastSearchedAt: string;
+}
+
+export interface PreparedKeywordPayload {
+  tasks: KeywordTask[];
+  skipped: SkippedKeywordTask[];
+}
+
+export interface RecordSearchResultInput {
+  keyword: string;
+  keywordId?: number;
+  translation?: string | null;
+  searchResults: number | null;
+  maxMonthSales: number | null;
+  maxReviews: number | null;
+  meetsConditions: boolean;
+  duration?: number;
+  zipCode?: string;
+  filters: FilterConditions;
   error?: string;
 }

@@ -11,7 +11,7 @@ interface ResultsTableProps {
   isProcessing: boolean;
 }
 
-type SortField = 'keyword' | 'searchResults' | 'maxMonthSales' | 'maxReviews' | 'completedAt';
+type SortField = 'keyword' | 'translation' | 'searchResults' | 'maxMonthSales' | 'maxReviews' | 'completedAt';
 type SortDirection = 'asc' | 'desc';
 
 const formatCompletedAt = (value?: string) => {
@@ -39,6 +39,14 @@ export default function ResultsTable({ results, onExport, onRetryErrors, isProce
 
     // 排序
     return [...filtered].sort((a, b) => {
+      if (sortField === 'translation') {
+        const aText = (a.translation ?? '').toString();
+        const bText = (b.translation ?? '').toString();
+        return sortDirection === 'asc'
+          ? aText.localeCompare(bText)
+          : bText.localeCompare(aText);
+      }
+
       if (sortField === 'completedAt') {
         const aTime = a.completedAt ? Date.parse(a.completedAt) : -Infinity;
         const bTime = b.completedAt ? Date.parse(b.completedAt) : -Infinity;
@@ -152,6 +160,16 @@ export default function ResultsTable({ results, onExport, onRetryErrors, isProce
               <th
                 scope="col"
                 className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                onClick={() => handleSort('translation')}
+              >
+                <div className="flex items-center gap-2">
+                  翻译
+                  <ArrowUpDown size={14} />
+                </div>
+              </th>
+              <th
+                scope="col"
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
                 onClick={() => handleSort('searchResults')}
               >
                 <div className="flex items-center gap-2">
@@ -200,22 +218,25 @@ export default function ResultsTable({ results, onExport, onRetryErrors, isProce
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {filteredAndSortedResults.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                <td colSpan={8} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                   暂无数据
                 </td>
               </tr>
             ) : (
               filteredAndSortedResults.map((result, index) => (
-                <tr 
+                <tr
                   key={index}
                   className={`${
-                    result.meetsConditions 
-                      ? 'bg-green-50 dark:bg-green-900/20' 
+                    result.meetsConditions
+                      ? 'bg-green-50 dark:bg-green-900/20'
                       : ''
                   } hover:bg-gray-50 dark:hover:bg-gray-800`}
                 >
                   <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 font-medium">
                     {result.keyword}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                    {result.translation ?? '-'}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 font-variant-numeric tabular-nums">
                     {result.searchResults !== null ? result.searchResults.toLocaleString() : '-'}

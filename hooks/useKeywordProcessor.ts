@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import type { KeywordResult, FilterConditions } from '@/lib/types';
+import type { KeywordResult, FilterConditions, KeywordTask } from '@/lib/types';
 import { DEFAULT_RETRY_DELAYS, meetsFilterConditions, sleep } from '@/lib/keyword-utils';
 
 interface UseKeywordProcessorProps {
-  keywords: string[];
+  tasks: KeywordTask[];
   zipCode: string;
   filters: FilterConditions;
   headless: boolean;
@@ -34,7 +34,7 @@ export function useKeywordProcessor() {
 
   const processKeyword = useCallback(
     async (
-      keyword: string,
+      task: KeywordTask,
       zipCode: string,
       headless: boolean,
       filters: FilterConditions,
@@ -49,7 +49,14 @@ export function useKeywordProcessor() {
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ keyword, zipCode, headless, filters }),
+            body: JSON.stringify({
+              keyword: task.keyword,
+              keywordId: task.keywordId,
+              translation: task.translation ?? null,
+              zipCode,
+              headless,
+              filters,
+            }),
             signal,
           });
 
@@ -72,7 +79,9 @@ export function useKeywordProcessor() {
           );
 
           return timestampResult({
-            keyword,
+            keywordId: task.keywordId,
+            keyword: task.keyword,
+            translation: task.translation,
             searchResults,
             maxMonthSales,
             maxReviews,
@@ -92,7 +101,7 @@ export function useKeywordProcessor() {
           }
 
           console.warn(
-            `关键词 "${keyword}" 请求失败（第${attempt + 1}次），将在 ${retryDelay / 1000
+            `关键词 "${task.keyword}" 请求失败（第${attempt + 1}次），将在 ${retryDelay / 1000
             } 秒后重试：${lastError.message}`
           );
 
@@ -101,7 +110,9 @@ export function useKeywordProcessor() {
       }
 
       return timestampResult({
-        keyword,
+        keywordId: task.keywordId,
+        keyword: task.keyword,
+        translation: task.translation,
         searchResults: null,
         maxMonthSales: null,
         maxReviews: null,
@@ -114,19 +125,19 @@ export function useKeywordProcessor() {
   );
 
   const startProcessing = useCallback(
-    async ({ keywords, zipCode, filters, headless, concurrency = 1 }: UseKeywordProcessorProps) => {
-      if (keywords.length === 0) {
+    async ({ tasks, zipCode, filters, headless, concurrency = 1 }: UseKeywordProcessorProps) => {
+      if (tasks.length === 0) {
         return;
       }
 
-      console.log(`\n🚀 开始批量搜索: ${keywords.length} 个关键词，并发数: ${concurrency}\n`);
+      console.log(`\n🚀 开始批量搜索: ${tasks.length} 个关键词，并发数: ${concurrency}\n`);
       const batchStartTime = Date.now();
 
       setIsProcessing(true);
       setResults([]);
       setCurrentIndex(0);
       setCurrentKeyword('');
-      setProgressTotal(keywords.length);
+      setProgressTotal(tasks.length);
 
       const controller = new AbortController();
       abortControllerRef.current = controller;
@@ -135,22 +146,22 @@ export function useKeywordProcessor() {
 
       try {
         // 并发处理
-        for (let i = 0; i < keywords.length; i += concurrency) {
+        for (let i = 0; i < tasks.length; i += concurrency) {
           if (controller.signal.aborted) {
             break;
           }
 
           // 获取当前批次的关键词
-          const batch = keywords.slice(i, i + concurrency);
-          
+          const batch = tasks.slice(i, i + concurrency);
+
           // 并发处理当前批次
-          const batchPromises = batch.map((keyword, batchIndex) => {
+          const batchPromises = batch.map((task, batchIndex) => {
             const globalIndex = i + batchIndex;
             setCurrentIndex(globalIndex + 1);
-            setCurrentKeyword(keyword);
+            setCurrentKeyword(task.keyword);
 
             return processKeyword(
-              keyword,
+              task,
               zipCode,
               headless,
               filters,
@@ -165,23 +176,23 @@ export function useKeywordProcessor() {
           setResults([...processedResults]);
 
           // 更新进度
-          setCurrentIndex(Math.min(i + concurrency, keywords.length));
+          setCurrentIndex(Math.min(i + concurrency, tasks.length));
 
           // 批次之间添加延迟（除了最后一批）
-          if (i + concurrency < keywords.length) {
+          if (i + concurrency < tasks.length) {
             await new Promise(resolve => setTimeout(resolve, 2000));
           }
         }
 
         // 输出总结
         const totalDuration = Date.now() - batchStartTime;
-        const avgDuration = totalDuration / keywords.length;
+        const avgDuration = totalDuration / tasks.length;
         const successCount = processedResults.filter(r => !r.error).length;
         const meetsCount = processedResults.filter(r => r.meetsConditions).length;
 
         console.log('\n========== 批量搜索完成 ==========');
-        console.log(`✓ 总关键词数: ${keywords.length}`);
-        console.log(`✓ 成功: ${successCount} | 失败: ${keywords.length - successCount}`);
+        console.log(`✓ 总关键词数: ${tasks.length}`);
+        console.log(`✓ 成功: ${successCount} | 失败: ${tasks.length - successCount}`);
         console.log(`✓ 符合条件: ${meetsCount}`);
         console.log(`✓ 总耗时: ${(totalDuration / 1000 / 60).toFixed(2)} 分钟`);
         console.log(`✓ 平均耗时: ${(avgDuration / 1000).toFixed(2)} 秒/个`);
@@ -239,7 +250,11 @@ export function useKeywordProcessor() {
           setCurrentKeyword(result.keyword);
 
           const retriedResult = await processKeyword(
-            result.keyword,
+            {
+              keywordId: result.keywordId,
+              keyword: result.keyword,
+              translation: result.translation,
+            },
             zipCode,
             headless,
             filters,

@@ -46,6 +46,9 @@ next-env.d.ts
 /playwright-report/
 /playwright/.cache/
 
+# local database files
+/data/
+
 # debug screenshots
 # debug-*.png
 debug-*.jpg
