@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import type { KeywordResult, FilterConditions } from '@/lib/types';
+import { DEFAULT_RETRY_DELAYS, meetsFilterConditions, sleep } from '@/lib/keyword-utils';
 
 interface UseKeywordProcessorProps {
   keywords: string[];
@@ -11,10 +12,6 @@ interface UseKeywordProcessorProps {
   concurrency?: number;
 }
 
-const RETRY_DELAYS = [3000, 6000, 10000]; // 失败后依次等待 3s、6s、10s 重试
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 export function useKeywordProcessor() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [results, setResults] = useState<KeywordResult[]>([]);
@@ -22,32 +19,6 @@ export function useKeywordProcessor() {
   const [currentKeyword, setCurrentKeyword] = useState<string>('');
   const [progressTotal, setProgressTotal] = useState(0);
   const abortControllerRef = useRef<AbortController | null>(null);
-
-  const checkConditions = useCallback(
-    (
-      searchResults: number | null,
-      maxMonthSales: number | null,
-      maxReviews: number | null,
-      filters: FilterConditions
-    ): boolean => {
-      // 1. 搜索结果数必须符合条件
-      if (searchResults === null || searchResults >= filters.maxSearchResults) {
-        return false;
-      }
-
-      // 2. 月销和评论必须存在
-      if (maxMonthSales === null || maxReviews === null) {
-        return false;
-      }
-
-      // 3. 检查月销和评论的具体数值是否符合条件
-      const salesOk = maxMonthSales > filters.minMonthSales;
-      const reviewsOk = maxReviews < filters.maxReviews;
-
-      return salesOk && reviewsOk;
-    },
-    []
-  );
 
   const processKeyword = useCallback(
     async (
@@ -59,7 +30,7 @@ export function useKeywordProcessor() {
     ): Promise<KeywordResult> => {
       let lastError: Error | null = null;
 
-      for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
+      for (let attempt = 0; attempt <= DEFAULT_RETRY_DELAYS.length; attempt++) {
         try {
           const response = await fetch('/api/search', {
             method: 'POST',
@@ -81,7 +52,7 @@ export function useKeywordProcessor() {
           }
 
           const { searchResults, maxMonthSales, maxReviews } = data.data;
-          const meetsConditions = checkConditions(
+          const meetsConditions = meetsFilterConditions(
             searchResults,
             maxMonthSales,
             maxReviews,
@@ -103,7 +74,7 @@ export function useKeywordProcessor() {
 
           lastError = error instanceof Error ? error : new Error(String(error));
 
-          const retryDelay = RETRY_DELAYS[attempt];
+          const retryDelay = DEFAULT_RETRY_DELAYS[attempt];
           if (!retryDelay) {
             break;
           }
@@ -113,7 +84,7 @@ export function useKeywordProcessor() {
             } 秒后重试：${lastError.message}`
           );
 
-          await delay(retryDelay);
+          await sleep(retryDelay);
         }
       }
 
@@ -127,7 +98,7 @@ export function useKeywordProcessor() {
         duration: undefined,
       };
     },
-    [checkConditions]
+    []
   );
 
   const startProcessing = useCallback(

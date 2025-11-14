@@ -139,6 +139,53 @@ npm run dev
 
 使用完毕后，点击页面右上角的"登出"按钮退出系统。
 
+## 命令行批量执行（Docker/自动调度）
+
+当你只需要在后台批量跑任务并将结果上传 OSS、通知企微时，可以直接使用内置 CLI：
+
+1. **准备关键词文件**  
+   - 每行一个关键词，例如 `/data/keywords.txt`。  
+   - 宿主机路径可以通过 `-v` 挂载到 Docker 容器。
+
+2. **配置环境变量（可放入 `.env` 或 Docker 环境变量）**
+
+| 变量 | 说明 |
+| --- | --- |
+| `OSS_REGION` | OSS 区域，如 `oss-cn-hangzhou` |
+| `OSS_BUCKET` | OSS Bucket 名称 |
+| `OSS_ACCESS_KEY_ID` / `OSS_ACCESS_KEY_SECRET` | 访问密钥 |
+| `OSS_PREFIX` | （可选）结果文件在 OSS 中的目录前缀，默认 `amazon-keyword-results` |
+| `OSS_ENDPOINT` | （可选）自定义 Endpoint，默认 `https://<bucket>.<region>.aliyuncs.com` |
+| `WECHAT_WEBHOOK_URL` | （可选）企微机器人 Webhook，成功/失败都会推送 |
+| `MAX_SEARCH_RESULTS` / `MIN_MONTH_SALES` / `MAX_REVIEWS` | （可选）覆盖 CLI 默认筛选条件 |
+
+3. **运行命令**
+
+```bash
+# 假设已经在宿主机 /data 目录下准备关键词列表
+docker run --rm \
+  -v /data/keywords.txt:/app/keywords.txt \
+  -v /data/results:/app/results \
+  -e OSS_REGION=oss-cn-hangzhou \
+  -e OSS_BUCKET=your-bucket \
+  -e OSS_ACCESS_KEY_ID=xxx \
+  -e OSS_ACCESS_KEY_SECRET=yyy \
+  -e WECHAT_WEBHOOK_URL=https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=... \
+  myregistry/amazon-auto:latest \
+  npm run batch -- \
+    --input /app/keywords.txt \
+    --output /app/results/amazon-results.csv \
+    --zip 12345 \
+    --concurrency 2 \
+    --maxRetryRounds 2
+```
+
+4. **脚本行为**
+   - 自动复用 Playwright 搜索逻辑，单个关键词失败会按 3s/6s/10s 间隔重试。
+   - 第一轮结束后若仍有错误，会按 `--maxRetryRounds` 设置对失败关键词再跑多轮，直到没有错误或超过次数。
+   - 最终生成的 CSV 包含所有关键词及错误信息，若仍有错误会发送失败通知并返回非 0 退出码。
+   - 成功后自动上传 OSS（可关闭相应环境变量）并将链接发送到企微。
+
 ## 项目结构
 
 ```
@@ -237,4 +284,3 @@ npm run lint
 ## 许可证
 
 MIT
-

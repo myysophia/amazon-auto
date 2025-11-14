@@ -16,6 +16,7 @@
 # next.js
 /.next/
 /out/
+/dist/
 
 # production
 /build
@@ -63,4 +64,3 @@ QUICKSTART.md
 SECURITY.md
 TROUBLESHOOTING.md
 WEB-AGENT.md
-
