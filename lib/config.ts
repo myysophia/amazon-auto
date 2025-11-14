@@ -51,6 +51,17 @@ export const config = {
     executablePath: PLAYWRIGHT_CHROMIUM_PATH,
     enableDebugScreenshot: ENABLE_DEBUG_SCREENSHOT,
   },
+  notifications: {
+    oss: {
+      region: process.env.OSS_REGION,
+      bucket: process.env.OSS_BUCKET,
+      accessKeyId: process.env.OSS_ACCESS_KEY_ID,
+      accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET,
+      prefix: process.env.OSS_PREFIX ?? 'amazon-keyword-results',
+      endpoint: process.env.OSS_ENDPOINT,
+    },
+    wechatWebhook: process.env.WECHAT_WEBHOOK_URL,
+  },
 };
 
 export type AppConfig = typeof config;

@@ -10,7 +10,7 @@ import ResultsTable from '@/components/ResultsTable';
 import { useKeywordProcessor } from '@/hooks/useKeywordProcessor';
 import type { FilterConditions } from '@/lib/types';
 import Papa from 'papaparse';
-import { Play, StopCircle, RotateCcw, LogOut } from 'lucide-react';
+import { Play, StopCircle, RotateCcw, LogOut, Share2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import VersionBadge from '@/components/VersionBadge';
 
@@ -42,6 +42,7 @@ export default function Home() {
     stopProcessing,
     reset,
   } = useKeywordProcessor();
+  const [isSending, setIsSending] = useState(false);
 
   // 验证输入（邮编可选，如果填写则必须是5位数字）
   const isValid = keywords.length > 0 && (zipCode === '' || zipCode.trim() === '' || (zipCode.length === 5 && /^\d{5}$/.test(zipCode)));
@@ -127,6 +128,35 @@ export default function Home() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleSend = async () => {
+    if (results.length === 0) {
+      alert('没有可发送的数据');
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      const response = await fetch('/api/notify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ results }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || '发送失败');
+      }
+
+      alert('已上传 OSS 并发送企微通知');
+    } catch (error: any) {
+      alert(`发送失败: ${error.message || '未知错误'}`);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleRetryErrors = () => {
@@ -234,6 +264,19 @@ export default function Home() {
                     >
                       <RotateCcw size={20} />
                       <span>重置</span>
+                    </button>
+                  )}
+                  {results.length > 0 && (
+                    <button
+                      onClick={handleSend}
+                      disabled={isSending}
+                      className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-lg
+                                 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2
+                                 transition-colors duration-200 font-medium min-h-[44px]"
+                      aria-label="一键发送"
+                    >
+                      <Share2 size={20} />
+                      <span>{isSending ? '发送中...' : '一键发送'}</span>
                     </button>
                   )}
                 </>
