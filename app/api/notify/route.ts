@@ -12,6 +12,7 @@ interface NotifyRequestBody {
     meetsConditions: boolean;
     duration?: number;
     error?: string;
+    completedAt?: string;
   }>;
 }
 
@@ -48,6 +49,7 @@ export async function POST(request: NextRequest) {
           最多评论数: r.maxReviews ?? '-',
           是否符合: r.meetsConditions ? '是' : '否',
           耗时_秒: r.duration ? (r.duration / 1000).toFixed(2) : '-',
+          完成时间: r.completedAt ? new Date(r.completedAt).toLocaleString() : '-',
           错误信息: r.error ?? '',
         }))
       );
@@ -79,4 +81,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

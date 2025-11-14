@@ -20,6 +20,18 @@ export function useKeywordProcessor() {
   const [progressTotal, setProgressTotal] = useState(0);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  const timestampResult = (result: Omit<KeywordResult, 'completedAt'>): KeywordResult => ({
+    ...result,
+    completedAt: new Date().toISOString(),
+  });
+
+  const sortByCompletedAtDesc = (entries: KeywordResult[]) =>
+    entries.sort((a, b) => {
+      const aTime = a.completedAt ? Date.parse(a.completedAt) : 0;
+      const bTime = b.completedAt ? Date.parse(b.completedAt) : 0;
+      return bTime - aTime;
+    });
+
   const processKeyword = useCallback(
     async (
       keyword: string,
@@ -59,14 +71,14 @@ export function useKeywordProcessor() {
             filters
           );
 
-          return {
+          return timestampResult({
             keyword,
             searchResults,
             maxMonthSales,
             maxReviews,
             meetsConditions,
             duration: data.duration,
-          };
+          });
         } catch (error: any) {
           if (error.name === 'AbortError') {
             throw error;
@@ -88,7 +100,7 @@ export function useKeywordProcessor() {
         }
       }
 
-      return {
+      return timestampResult({
         keyword,
         searchResults: null,
         maxMonthSales: null,
@@ -96,7 +108,7 @@ export function useKeywordProcessor() {
         meetsConditions: false,
         error: lastError?.message || '请求失败',
         duration: undefined,
-      };
+      });
     },
     []
   );
@@ -149,6 +161,7 @@ export function useKeywordProcessor() {
           // 等待当前批次完成
           const batchResults = await Promise.all(batchPromises);
           processedResults.push(...batchResults);
+          sortByCompletedAtDesc(processedResults);
           setResults([...processedResults]);
 
           // 更新进度
@@ -234,7 +247,7 @@ export function useKeywordProcessor() {
           );
 
           updatedResults[index] = retriedResult;
-          setResults([...updatedResults]);
+          setResults(sortByCompletedAtDesc([...updatedResults]));
           completed += 1;
           setCurrentIndex(completed);
         }

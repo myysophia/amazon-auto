@@ -7,6 +7,7 @@ export interface KeywordResult {
   meetsConditions: boolean; // 是否符合筛选条件
   error?: string; // 错误信息
   duration?: number; // 搜索耗时（毫秒）
+  completedAt?: string; // 完成时间
 }
 
 // 筛选条件类型
@@ -44,4 +45,3 @@ export interface SearchResponse {
   };
   error?: string;
 }
-

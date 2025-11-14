@@ -11,12 +11,19 @@ interface ResultsTableProps {
   isProcessing: boolean;
 }
 
-type SortField = 'keyword' | 'searchResults' | 'maxMonthSales' | 'maxReviews';
+type SortField = 'keyword' | 'searchResults' | 'maxMonthSales' | 'maxReviews' | 'completedAt';
 type SortDirection = 'asc' | 'desc';
 
+const formatCompletedAt = (value?: string) => {
+  if (!value) {
+    return '-';
+  }
+  return new Date(value).toLocaleString();
+};
+
 export default function ResultsTable({ results, onExport, onRetryErrors, isProcessing }: ResultsTableProps) {
-  const [sortField, setSortField] = useState<SortField>('keyword');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [sortField, setSortField] = useState<SortField>('completedAt');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [filterMeetsConditions, setFilterMeetsConditions] = useState<'all' | 'yes' | 'no'>('all');
 
   // 排序和筛选
@@ -32,6 +39,12 @@ export default function ResultsTable({ results, onExport, onRetryErrors, isProce
 
     // 排序
     return [...filtered].sort((a, b) => {
+      if (sortField === 'completedAt') {
+        const aTime = a.completedAt ? Date.parse(a.completedAt) : -Infinity;
+        const bTime = b.completedAt ? Date.parse(b.completedAt) : -Infinity;
+        return sortDirection === 'asc' ? aTime - bTime : bTime - aTime;
+      }
+
       let aValue: any = a[sortField];
       let bValue: any = b[sortField];
 
@@ -166,6 +179,16 @@ export default function ResultsTable({ results, onExport, onRetryErrors, isProce
                   <ArrowUpDown size={14} />
                 </div>
               </th>
+              <th
+                scope="col"
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                onClick={() => handleSort('completedAt')}
+              >
+                <div className="flex items-center gap-2">
+                  完成时间
+                  <ArrowUpDown size={14} />
+                </div>
+              </th>
               <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 是否符合
               </th>
@@ -177,7 +200,7 @@ export default function ResultsTable({ results, onExport, onRetryErrors, isProce
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {filteredAndSortedResults.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                <td colSpan={7} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                   暂无数据
                 </td>
               </tr>
@@ -200,9 +223,12 @@ export default function ResultsTable({ results, onExport, onRetryErrors, isProce
                   <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 tabular-nums">
                     {result.maxMonthSales !== null ? result.maxMonthSales.toLocaleString() : '-'}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 tabular-nums">
-                    {result.maxReviews !== null ? result.maxReviews.toLocaleString() : '-'}
-                  </td>
+                <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 tabular-nums">
+                  {result.maxReviews !== null ? result.maxReviews.toLocaleString() : '-'}
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                  {formatCompletedAt(result.completedAt)}
+                </td>
                   <td className="px-4 py-3">
                     {result.error ? (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
@@ -230,4 +256,3 @@ export default function ResultsTable({ results, onExport, onRetryErrors, isProce
     </div>
   );
 }
-

@@ -1,3 +1,4 @@
+import './logger';
 import { chromium, Browser, BrowserContext, Page } from 'playwright';
 import { parseSearchResults, parseMonthSales, extractReviewsFromLink } from './data-parser';
 import type { FilterConditions } from './types';

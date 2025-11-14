@@ -39,6 +39,7 @@ const runSingleKeyword = async (
         filters
       );
 
+      const completedAt = new Date().toISOString();
       return {
         keyword,
         searchResults: result.searchResults,
@@ -46,6 +47,7 @@ const runSingleKeyword = async (
         maxReviews: result.maxReviews,
         meetsConditions,
         duration: result.duration,
+        completedAt,
       };
     } catch (error: any) {
       if (error?.name === 'AbortError') {
@@ -75,6 +77,7 @@ const runSingleKeyword = async (
     maxReviews: null,
     meetsConditions: false,
     error: lastError?.message || '未知错误',
+    completedAt: new Date().toISOString(),
   };
 };
 
