@@ -186,6 +186,27 @@ docker run --rm \
    - 最终生成的 CSV 包含所有关键词及错误信息，若仍有错误会发送失败通知并返回非 0 退出码。
    - 成功后自动上传 OSS（可关闭相应环境变量）并将链接发送到企微。
 
+### 本地调试脚本
+
+仓库内提供 `scripts/run-batch.sh`，便于在本地环境快速运行批处理：
+
+```bash
+# 加可执行权限（首次）
+chmod +x scripts/run-batch.sh
+
+# 运行示例
+./scripts/run-batch.sh \
+  -i ./keywords.txt \
+  -o ./results/local-results.csv \
+  -z 10001 \
+  -c 2 \
+  -r 2
+
+# 若希望观察浏览器，请添加 -H 切换到有头模式
+```
+
+该脚本本质上是对 `npm run batch` 的包裹，会自动创建输出目录、保留 CSV，并继承所有环境变量（OSS、企微、筛选条件等）。在 CI 或宿主机 cron 中调用 Docker 版本之前，可先用此脚本在本机验证流程。
+
 ## 项目结构
 
 ```
