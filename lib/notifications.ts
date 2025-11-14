@@ -16,9 +16,16 @@ const uploadToOss = async (filename: string, content: string): Promise<string | 
     return null;
   }
 
-  const endpoint =
-    ossConfig.endpoint ?? `https://${ossConfig.bucket}.${ossConfig.region}.aliyuncs.com`;
-  const objectKey = `${ossConfig.prefix}/${filename}`;
+  let endpoint =
+    ossConfig.endpoint?.trim() ??
+    `https://${ossConfig.bucket}.${ossConfig.region}.aliyuncs.com`;
+
+  if (!/^https?:\/\//i.test(endpoint)) {
+    endpoint = `https://${endpoint}`;
+  }
+
+  const normalizedPrefix = ossConfig.prefix?.replace(/^\/+|\/+$/g, '') ?? 'amazon-keyword-results';
+  const objectKey = `${normalizedPrefix}/${filename}`;
   const resourcePath = `/${ossConfig.bucket}/${objectKey}`;
   const contentType = 'text/csv;charset=utf-8';
   const date = new Date().toUTCString();
@@ -85,4 +92,3 @@ export const notifyResults = async (
 
   return { ossUrl };
 };
-
