@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { FilterConditions } from '@/lib/types';
 
 interface FilterConfigProps {
@@ -8,16 +9,57 @@ interface FilterConfigProps {
   disabled?: boolean;
 }
 
+type FilterField = keyof FilterConditions;
+
+const toStringMap = (filters: FilterConditions): Record<FilterField, string> => ({
+  maxSearchResults: String(filters.maxSearchResults ?? ''),
+  minMonthSales: String(filters.minMonthSales ?? ''),
+  maxReviews: String(filters.maxReviews ?? ''),
+});
+
 export default function FilterConfig({ filters, onChange, disabled = false }: FilterConfigProps) {
-  const handleChange = (field: keyof FilterConditions, value: string) => {
-    const numValue = parseInt(value, 10);
-    if (!isNaN(numValue) && numValue >= 0) {
+  const [localValues, setLocalValues] = useState<Record<FilterField, string>>(() =>
+    toStringMap(filters)
+  );
+
+  useEffect(() => {
+    setLocalValues(toStringMap(filters));
+  }, [filters]);
+
+  const handleChange = (field: FilterField, value: string) => {
+    if (!/^\d*$/.test(value)) {
+      return;
+    }
+
+    setLocalValues((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+
+    if (value === '') {
+      return;
+    }
+
+    const numValue = Number(value);
+    if (!Number.isNaN(numValue)) {
       onChange({
         ...filters,
         [field]: numValue,
       });
-    } else if (value === '') {
-      // 允许清空输入框，设置为0
+    }
+  };
+
+  const handleBlur = (field: FilterField) => {
+    if (localValues[field] !== '') {
+      return;
+    }
+
+    setLocalValues((prev) => ({
+      ...prev,
+      [field]: '0',
+    }));
+
+    if (filters[field] !== 0) {
       onChange({
         ...filters,
         [field]: 0,
@@ -39,10 +81,12 @@ export default function FilterConfig({ filters, onChange, disabled = false }: Fi
             type="number"
             id="maxSearchResults"
             name="maxSearchResults"
-            value={filters.maxSearchResults}
+            value={localValues.maxSearchResults}
             onChange={(e) => handleChange('maxSearchResults', e.target.value)}
+            onBlur={() => handleBlur('maxSearchResults')}
             disabled={disabled}
             min="0"
+            inputMode="numeric"
             className="w-full px-4 py-2 text-base border border-gray-300 rounded-lg
                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                        disabled:bg-gray-100 disabled:cursor-not-allowed
@@ -64,10 +108,12 @@ export default function FilterConfig({ filters, onChange, disabled = false }: Fi
             type="number"
             id="minMonthSales"
             name="minMonthSales"
-            value={filters.minMonthSales}
+            value={localValues.minMonthSales}
             onChange={(e) => handleChange('minMonthSales', e.target.value)}
+            onBlur={() => handleBlur('minMonthSales')}
             disabled={disabled}
             min="0"
+            inputMode="numeric"
             className="w-full px-4 py-2 text-base border border-gray-300 rounded-lg
                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                        disabled:bg-gray-100 disabled:cursor-not-allowed
@@ -89,10 +135,12 @@ export default function FilterConfig({ filters, onChange, disabled = false }: Fi
             type="number"
             id="maxReviews"
             name="maxReviews"
-            value={filters.maxReviews}
+            value={localValues.maxReviews}
             onChange={(e) => handleChange('maxReviews', e.target.value)}
+            onBlur={() => handleBlur('maxReviews')}
             disabled={disabled}
             min="0"
+            inputMode="numeric"
             className="w-full px-4 py-2 text-base border border-gray-300 rounded-lg
                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                        disabled:bg-gray-100 disabled:cursor-not-allowed
@@ -108,4 +156,3 @@ export default function FilterConfig({ filters, onChange, disabled = false }: Fi
     </div>
   );
 }
-
