@@ -8,6 +8,16 @@ import crypto from 'node:crypto';
 import { runBatchWithRetries } from '../lib/batch-search-runner';
 import type { FilterConditions, KeywordResult } from '../lib/types';
 
+const attachTimestamp = <T extends (...args: any[]) => void>(fn: T) =>
+  ((...args: Parameters<T>) => {
+    const prefix = `[${new Date().toISOString()}]`;
+    fn(prefix, ...args);
+  }) as T;
+
+console.log = attachTimestamp(console.log.bind(console));
+console.warn = attachTimestamp(console.warn.bind(console));
+console.error = attachTimestamp(console.error.bind(console));
+
 interface CliOptions {
   input: string;
   output: string;
