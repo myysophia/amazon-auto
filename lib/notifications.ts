@@ -60,7 +60,7 @@ const uploadToOss = async (filename: string, content: string): Promise<string | 
 const sendWechatNotification = async (content: string) => {
   const webhook = config.notifications.wechatWebhook;
   if (!webhook) {
-    return;
+    throw new Error('未配置企业微信 Webhook');
   }
 
   await fetch(webhook, {
@@ -69,6 +69,30 @@ const sendWechatNotification = async (content: string) => {
     body: JSON.stringify({
       msgtype: 'markdown',
       markdown: { content },
+    }),
+  });
+};
+
+const sendFeishuNotification = async (content: string) => {
+  const webhook = config.notifications.feishuWebhook;
+  if (!webhook) {
+    throw new Error('未配置飞书 Webhook');
+  }
+
+  await fetch(webhook, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      msg_type: 'interactive',
+      card: {
+        config: { wide_screen_mode: true },
+        elements: [
+          {
+            tag: 'markdown',
+            content: content.replace(/\n/g, '\n\n'),
+          },
+        ],
+      },
     }),
   });
 };
@@ -86,9 +110,27 @@ export const notifyResults = async (
   const linkText = ossUrl ? `[下载结果](${ossUrl})` : filename;
   const message = `${summary}\n> 结果：${linkText}`;
 
-  await sendWechatNotification(message).catch((error) => {
-    console.error('企微通知发送失败:', error);
-  });
+  for (const channel of config.notifications.channels) {
+    if (channel === 'wechat') {
+      if (config.notifications.wechatWebhook) {
+        await sendWechatNotification(message).catch((error) =>
+          console.error('企微通知发送失败:', error)
+        );
+      } else {
+        console.warn('通知渠道包含 wechat，但未配置 WECHAT_WEBHOOK_URL');
+      }
+    } else if (channel === 'feishu') {
+      if (config.notifications.feishuWebhook) {
+        await sendFeishuNotification(message).catch((error) =>
+          console.error('飞书通知发送失败:', error)
+        );
+      } else {
+        console.warn('通知渠道包含 feishu，但未配置 FEISHU_WEBHOOK_URL');
+      }
+    } else {
+      console.warn(`未知的通知渠道: ${channel}`);
+    }
+  }
 
   return { ossUrl };
 };

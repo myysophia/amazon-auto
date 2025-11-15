@@ -60,7 +60,12 @@ export const config = {
       prefix: process.env.OSS_PREFIX ?? 'amazon-keyword-results',
       endpoint: process.env.OSS_ENDPOINT,
     },
+    channels: (process.env.NOTIFICATION_CHANNELS ?? 'wechat')
+      .split(',')
+      .map((ch) => ch.trim())
+      .filter(Boolean),
     wechatWebhook: process.env.WECHAT_WEBHOOK_URL,
+    feishuWebhook: process.env.FEISHU_WEBHOOK_URL,
   },
 };
 
